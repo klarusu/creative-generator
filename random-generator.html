@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>STEM Writing Inspiration Generator</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #f7f9fc;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+
+    .container {
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+      padding: 40px;
+      max-width: 700px;
+      text-align: center;
+      position: relative;
+    }
+
+    h1 {
+      margin-bottom: 20px;
+      font-size: 28px;
+      color: #2c3e50;
+    }
+
+    button {
+      background: #4a90e2;
+      color: white;
+      padding: 12px 24px;
+      font-size: 16px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.3s ease;
+      margin: 5px;
+    }
+
+    button:hover {
+      background: #357ab8;
+    }
+
+    #result {
+      margin-top: 30px;
+      display: flex;
+      justify-content: space-around;
+      gap: 20px;
+      opacity: 0;
+      transition: opacity 0.5s ease;
+    }
+
+    #result.visible {
+      opacity: 1;
+    }
+
+    .card {
+      background: #eef2f7;
+      padding: 20px;
+      border-radius: 12px;
+      flex: 1;
+      text-align: center;
+      min-height: 120px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .label {
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 10px;
+      text-transform: uppercase;
+      font-size: 14px;
+    }
+
+    .content {
+      font-size: 18px;
+      line-height: 1.4;
+    }
+
+    .genre .card {
+      background: #fcefe3;
+    }
+
+    .concept .card {
+      background: #e3f5fc;
+      font-style: italic;
+    }
+
+    #block-message {
+      margin-top: 25px;
+      padding: 20px;
+      border-radius: 12px;
+      background-color: #ffe3e3;
+      color: #b00020;
+      font-weight: bold;
+      font-size: 18px;
+      display: none;
+    }
+
+    #countdown {
+      font-weight: bold;
+      color: #b00020;
+    }
+
+    #reset-btn {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: #ddd;
+      color: #333;
+      font-size: 12px;
+      padding: 5px 10px;
+      border-radius: 6px;
+    }
+
+    #reset-btn:hover {
+      background: #bbb;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>STEM Writing Inspiration Generator</h1>
+    <button onclick="generate()">Get Variables</button>
+    <button id="reset-btn" onclick="resetTimer()">Reset Timer</button>
+
+    <div id="result">
+      <div class="genre card">
+        <div class="label">Genre / Style</div>
+        <div id="genre" class="content"></div>
+      </div>
+      <div class="concept card">
+        <div class="label">STEM Concept</div>
+        <div id="concept" class="content"></div>
+      </div>
+    </div>
+
+    <div id="block-message">
+      ⏳ Please wait <span id="countdown">...</span> before generating another inspiration.
+    </div>
+  </div>
+
+  <script>
+    const setA = [
+      'Gothic Horror', 'Hard Sci-Fi', 'Cyberpunk', 'Epic Fantasy',
+      'Detective Noir', 'Magical Realism', 'Post Apocalyptic', 'Historical Romance',
+      'Space Opera', 'Surrealist Fiction', 'Cli-Fi', 'Scientific Biography',
+      'Fable or allegory', 'Body Horror', 'Domestic realism', 'Educational Text',
+      'Scientific Article', 'Feature Article', 'Scientific Report',
+      'Classic Literary Fiction', 'Memoir Autobiography Autofiction'
+    ];
+
+    const setB = [
+      'Conservation of energy - nothing is lost, only transformed',
+      'Game theory - strategic decision-making and conflict, cooperation, competition, negotiation',
+      'Entropy - disorder increases over time',
+      'Emergence - complexity from simple rules',
+      'Fractals - patterns or shapes that repeat at different scales, often infinitely',
+      'The Uncertainty Principle - you can\'t know everything precisely at once',
+      'Recursion - self-referential systems',
+      'Symbiosis - mutual biological dependence',
+      'Phase transitions and critical points - materials change states at critical thresholds',
+      'Fatigue and failure - progressive weakening due to repeated stress',
+      'Genetic drift - random changes in populations over time',
+      'Non-linear systems and chaos theory - small changes, huge effects',
+      'Superposition - multiple states co-existing',
+      'Plate tectonics - slow, invisible forces shaping visible change',
+      'Wave-particle duality - a thing can be two things until observed',
+      'Bayesian Inference - beliefs updated with new data'
+    ];
+
+    const COOLDOWN_MS = 30 * 60 * 1000; // 30 minutes
+    let countdownInterval;
+
+    function generate() {
+      const resultDiv = document.getElementById('result');
+      const genreDiv = document.getElementById('genre');
+      const conceptDiv = document.getElementById('concept');
+      const blockMessage = document.getElementById('block-message');
+      const countdownDisplay = document.getElementById('countdown');
+
+      const now = Date.now();
+      const lastClickedRaw = localStorage.getItem('lastClicked');
+      const lastClicked = lastClickedRaw ? parseInt(lastClickedRaw) : 0;
+
+      const timePassed = now - lastClicked;
+
+      if (timePassed < COOLDOWN_MS) {
+        const timeLeft = COOLDOWN_MS - timePassed;
+        startCountdown(timeLeft);
+        blockMessage.style.display = 'block';
+        resultDiv.classList.remove('visible');
+        return;
+      }
+
+      const itemA = setA[Math.floor(Math.random() * setA.length)];
+      const itemB = setB[Math.floor(Math.random() * setB.length)];
+
+      genreDiv.innerText = itemA;
+      conceptDiv.innerText = itemB;
+
+      resultDiv.classList.add('visible');
+      blockMessage.style.display = 'none';
+
+      localStorage.setItem('lastClicked', now.toString());
+      clearInterval(countdownInterval);
+    }
+
+    function startCountdown(duration) {
+      const countdownDisplay = document.getElementById('countdown');
+      clearInterval(countdownInterval);
+
+      function updateCountdown() {
+        const minutes = Math.floor(duration / 60000);
+        const seconds = Math.floor((duration % 60000) / 1000);
+        countdownDisplay.innerText = `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+
+        if (duration <= 0) {
+          clearInterval(countdownInterval);
+          document.getElementById('block-message').style.display = 'none';
+        }
+
+        duration -= 1000;
+      }
+
+      updateCountdown(); // initial call
+      countdownInterval = setInterval(updateCountdown, 1000);
+    }
+
+    function resetTimer() {
+      localStorage.removeItem('lastClicked');
+      document.getElementById('block-message').style.display = 'none';
+      document.getElementById('result').classList.remove('visible');
+      clearInterval(countdownInterval);
+    }
+  </script>
+</body>
+</html>
