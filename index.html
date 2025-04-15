@@ -21,7 +21,7 @@
       border-radius: 16px;
       box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
       padding: 40px;
-      max-width: 700px;
+      max-width: 900px;
       text-align: center;
       position: relative;
     }
@@ -55,6 +55,7 @@
       gap: 20px;
       opacity: 0;
       transition: opacity 0.5s ease;
+      flex-wrap: wrap;
     }
 
     #result.visible {
@@ -65,7 +66,7 @@
       background: #eef2f7;
       padding: 20px;
       border-radius: 12px;
-      flex: 1;
+      flex: 1 1 250px;
       text-align: center;
       min-height: 120px;
       display: flex;
@@ -93,6 +94,10 @@
     .concept .card {
       background: #e3f5fc;
       font-style: italic;
+    }
+
+    .form .card {
+      background: #e8fce3;
     }
 
     #block-message {
@@ -130,7 +135,8 @@
 <body>
   <div class="container">
     <h1>STEM Writing Inspiration Generator</h1>
-    <button onclick="generate()">Get Variables</button>
+    <button onclick="generate()">Get Genre + Concept</button>
+    <button onclick="generateWithForm()">Get All Three</button>
     <button id="reset-btn" onclick="resetTimer()">Reset Timer</button>
 
     <div id="result">
@@ -141,6 +147,10 @@
       <div class="concept card">
         <div class="label">STEM Concept</div>
         <div id="concept" class="content"></div>
+      </div>
+      <div class="form card">
+        <div class="label">Form</div>
+        <div id="form" class="content"></div>
       </div>
     </div>
 
@@ -178,41 +188,15 @@
       'Bayesian Inference - beliefs updated with new data'
     ];
 
-    const COOLDOWN_MS = 30 * 60 * 1000; // 30 minutes
+    const setC = [
+      'Poetry', 'Short-form Fiction', 'Long-form Fiction', 'Creative Nonfiction'
+    ];
+
+    const COOLDOWN_MS = 30 * 60 * 1000;
     let countdownInterval;
 
-    function generate() {
-      const resultDiv = document.getElementById('result');
-      const genreDiv = document.getElementById('genre');
-      const conceptDiv = document.getElementById('concept');
-      const blockMessage = document.getElementById('block-message');
-      const countdownDisplay = document.getElementById('countdown');
-
-      const now = Date.now();
-      const lastClickedRaw = localStorage.getItem('lastClicked');
-      const lastClicked = lastClickedRaw ? parseInt(lastClickedRaw) : 0;
-
-      const timePassed = now - lastClicked;
-
-      if (timePassed < COOLDOWN_MS) {
-        const timeLeft = COOLDOWN_MS - timePassed;
-        startCountdown(timeLeft);
-        blockMessage.style.display = 'block';
-        resultDiv.classList.remove('visible');
-        return;
-      }
-
-      const itemA = setA[Math.floor(Math.random() * setA.length)];
-      const itemB = setB[Math.floor(Math.random() * setB.length)];
-
-      genreDiv.innerText = itemA;
-      conceptDiv.innerText = itemB;
-
-      resultDiv.classList.add('visible');
-      blockMessage.style.display = 'none';
-
-      localStorage.setItem('lastClicked', now.toString());
-      clearInterval(countdownInterval);
+    function pickRandom(set) {
+      return set[Math.floor(Math.random() * set.length)];
     }
 
     function startCountdown(duration) {
@@ -223,24 +207,66 @@
         const minutes = Math.floor(duration / 60000);
         const seconds = Math.floor((duration % 60000) / 1000);
         countdownDisplay.innerText = `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
-
         if (duration <= 0) {
           clearInterval(countdownInterval);
           document.getElementById('block-message').style.display = 'none';
         }
-
         duration -= 1000;
       }
 
-      updateCountdown(); // initial call
+      updateCountdown();
       countdownInterval = setInterval(updateCountdown, 1000);
+    }
+
+    function showBlockMessage(timeLeft) {
+      startCountdown(timeLeft);
+      document.getElementById('block-message').style.display = 'block';
+      document.getElementById('result').classList.remove('visible');
+    }
+
+    function clearBlockMessage() {
+      document.getElementById('block-message').style.display = 'none';
+      clearInterval(countdownInterval);
+    }
+
+    function generateBase(includeForm = false) {
+      const resultDiv = document.getElementById('result');
+      const genreDiv = document.getElementById('genre');
+      const conceptDiv = document.getElementById('concept');
+      const formDiv = document.getElementById('form');
+
+      const now = Date.now();
+      const lastClickedRaw = localStorage.getItem('lastClicked');
+      const lastClicked = lastClickedRaw ? parseInt(lastClickedRaw) : 0;
+
+      const timePassed = now - lastClicked;
+
+      if (timePassed < COOLDOWN_MS) {
+        showBlockMessage(COOLDOWN_MS - timePassed);
+        return;
+      }
+
+      genreDiv.innerText = pickRandom(setA);
+      conceptDiv.innerText = pickRandom(setB);
+      formDiv.innerText = includeForm ? pickRandom(setC) : "";
+
+      resultDiv.classList.add('visible');
+      clearBlockMessage();
+      localStorage.setItem('lastClicked', now.toString());
+    }
+
+    function generate() {
+      generateBase(false);
+    }
+
+    function generateWithForm() {
+      generateBase(true);
     }
 
     function resetTimer() {
       localStorage.removeItem('lastClicked');
-      document.getElementById('block-message').style.display = 'none';
       document.getElementById('result').classList.remove('visible');
-      clearInterval(countdownInterval);
+      clearBlockMessage();
     }
   </script>
 </body>
